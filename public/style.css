@@ -1,0 +1,202 @@
+:root{
+    --body-pad: 10px;
+    --gap: 10px;
+    --cols: 2;
+    --rows: 3;
+    --btn-h: 26px;
+    --label-h: 20px;
+}
+
+/* Reset */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html,body {
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden; /* no scrolling */
+}
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100dvh;
+    width: 100vw;
+    background: #111;
+    font-family: sans-serif;
+    color: #bbb;
+    padding: var(--body-pad);
+    -webkit-font-smoothing:antialiased;
+}
+
+/* Grid fills the available viewport inside body padding */
+.soundboard-grid {
+    display: grid;
+    gap: var(--gap);
+    width: calc(100vw - (var(--body-pad) * 2));
+    height: calc(100dvh - (var(--body-pad) * 2));
+    grid-template-columns: repeat(var(--cols), 1fr);
+    /* compute exact row height so cells never grow/overflow */
+    grid-template-rows: repeat(var(--rows), calc((100dvh - (var(--body-pad) * 2) - (var(--gap) * (var(--rows) - 1))) / var(--rows)));
+    max-width: none;
+    max-height: none;
+}
+
+/* Each item is strictly confined to its grid cell; use grid rows inside item */
+.image-upload-item {
+    display: grid;
+    grid-template-rows: var(--label-h) 1fr var(--btn-h);
+    gap: 6px;
+    align-items: center;
+    justify-items: center;
+    background: #1a1a1a;
+    padding: 8px;
+    border-radius: 12px;
+    transition: background-color 0.3s ease;
+    border: 1px solid transparent;
+    user-select: none;
+    min-width: 0; /* important to allow ellipsis */
+    min-height: 0; /* allow children to shrink */
+    overflow: hidden; /* prevent internal overflow */
+}
+
+.image-upload-item:active { filter: brightness(1.2); }
+
+/* Frame takes the flexible middle row and is clipped */
+.frame {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid #444;
+    position: relative;
+    overflow: hidden;
+    background: #222;
+    touch-action: none;
+    display: block;
+}
+
+/* Placeholder centered inside frame */
+.placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 10px;
+    text-transform: uppercase;
+    text-align: center;
+    pointer-events: none;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+/* Preview covers the frame exactly */
+.preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Title/label: fixed height, no wrap, ellipsis */
+.label {
+    font-size: 12px;
+    text-align: center;
+    outline: none;
+    border-bottom: 1px solid transparent;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+    display: inline-block;
+    height: var(--label-h);
+    padding: 4px 6px;
+    box-sizing: border-box;
+}
+
+.label:focus { border-bottom: 1px solid #bbb; }
+
+/* Button: fixed height so it doesn't grow and push other content */
+.sound-btn {
+    border: 1px solid #333;
+    background: rgba(30,30,30,0.6);
+    color: #bbb;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    width: 50%;
+    height: var(--btn-h);
+    touch-action: none;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.sound-btn.has-audio { border-color: #555; }
+
+.sound-btn:active { background: #bbb; color: #111; }
+
+/* Color Picker Modal unchanged except ensure it covers full viewport */
+.color-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+}
+
+.color-overlay.hidden { display: none; }
+
+.color-modal {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 20px;
+    width: min(90vw, 320px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.color-preview { width: 100%; height: 60px; border-radius: 10px; border: 1px solid #333; transition: background 0.1s; }
+.color-sliders { display: flex; flex-direction: column; gap: 10px; }
+.color-sliders label { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#aaa; font-weight:600; }
+.color-sliders label span { width:28px; text-align:right; font-variant-numeric:tabular-nums; color:#ddd; font-size:0.8rem; }
+.slider { -webkit-appearance:none; appearance:none; flex:1; height:6px; border-radius:3px; outline:none; cursor:pointer; border:none; }
+.slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid #555; cursor:pointer; }
+.slider-r { background: linear-gradient(to right, #1a0000, #ff0000); }
+.slider-g { background: linear-gradient(to right, #001a00, #00ff00); }
+.slider-b { background: linear-gradient(to right, #00001a, #0000ff); }
+
+.color-hex-row { display:flex; align-items:center; gap:6px; background:#111; border:1px solid #333; border-radius:8px; padding:8px 12px; font-size:0.9rem; color:#666; }
+.color-hex-row input { background:none; border:none; outline:none; color:#eee; font-size:0.9rem; font-family:monospace; letter-spacing:0.1em; width:100%; text-transform:uppercase; }
+
+.color-swatches { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
+.swatch { width:100%; aspect-ratio:1; border-radius:6px; border:1px solid #444; cursor:pointer; padding:0; transition:transform 0.1s; }
+.swatch:active { transform: scale(0.9); }
+
+.color-actions { display:flex; gap:10px; }
+.color-actions button { flex:1; padding:10px; border-radius:8px; border:1px solid #333; font-size:0.9rem; cursor:pointer; transition:all 0.15s; }
+#colorCancel { background:#222; color:#888; }
+#colorCancel:active { background:#2a2a2a; }
+#colorApply { background:#eee; color:#111; font-weight:700; border-color:transparent; }
+#colorApply:active { background:#fff; }
+
+/* Tight small-screen adjustments */
+@media (max-height: 520px) {
+    :root { --label-h: 30px; --btn-h: 36px; --gap: 6px; }
+    .label { font-size: 12px; }
+}
