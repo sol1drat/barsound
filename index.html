@@ -270,84 +270,65 @@
 
             for (let i = 0; i < 6; i++) {
                 const item = document.createElement('div');
-                item.className  = 'image-upload-item';
+                item.className = 'image-upload-item';
                 item.dataset.id = i;
-                item.innerHTML  = `
-                    <p class="label" contenteditable="true" spellcheck="false">Sound ${i + 1}</p>
-                    <div class="frame">
-                        <div class="placeholder">Upload image</div>
-                        <img class="preview" alt="Preview" style="display:none"/>
-                    </div>
-                    <button class="sound-btn">Play</button>
-                `;
+                item.innerHTML = `
+        <p class="label" contenteditable="true" spellcheck="false">Sound ${i + 1}</p>
+        <div class="frame">
+            <div class="placeholder">Upload image</div>
+            <img class="preview" alt="Preview" style="display:none"/>
+        </div>
+        <button class="sound-btn">Play</button>
+    `;
 
                 const frame = item.querySelector('.frame');
-                const btn   = item.querySelector('.sound-btn');
+                const btn = item.querySelector('.sound-btn');
                 const label = item.querySelector('.label');
 
-                let bgPressTimer  = null;  // setTimeout handle for color-picker long-press
-                let frameDownTime = 0;     // timestamp of pointerdown on frame
-                let btnDownTime   = 0;     // timestamp of pointerdown on sound-btn
+                // FIX 1: IMAGE UPLOAD (Was missing the listener entirely)
+                frame.addEventListener('click', () => triggerImageInput(item));
 
-                item.addEventListener('pointerdown', () => {
-                    bgPressTimer = setTimeout(() => {
-                        bgPressTimer = null;
-                        openColorPicker(item);
-                    }, 600);
-                });
-                const clearBgTimer = () => {
-                    if (bgPressTimer) { clearTimeout(bgPressTimer); bgPressTimer = null; }
-                };
-                item.addEventListener('pointerup',     clearBgTimer);
-                item.addEventListener('pointerleave',  clearBgTimer);
-                item.addEventListener('pointercancel', clearBgTimer);  // ← was missing
-                item.addEventListener('contextmenu', e => e.preventDefault());
-                label.addEventListener('pointerdown', e => e.stopPropagation());
-
+                // FIX 2: PLAY BUTTON & LONG PRESS (iOS Friendly)
                 let pressTimer = null;
-                let longPressTriggered = false;
+                let isLongPress = false;
 
-                btn.addEventListener('pointerdown', e => {
+                btn.addEventListener('pointerdown', (e) => {
                     e.stopPropagation();
-                    e.preventDefault();
-
-                    longPressTriggered = false;
-
+                    isLongPress = false;
+                    // 400ms is the "sweet spot" for iOS to still trust the gesture
                     pressTimer = setTimeout(() => {
-                        longPressTriggered = true; // mark only
-                    }, 500);
+                        isLongPress = true;
+                    }, 400); 
                 });
 
-                btn.addEventListener('pointerup', e => {
-                    e.stopPropagation();
+                btn.addEventListener('pointerup', (e) => {
+                    e.preventDefault();
+                    clearTimeout(pressTimer);
 
-                    if (pressTimer) {
-                        clearTimeout(pressTimer);
-                        pressTimer = null;
-                    }
-
-                    if (longPressTriggered) {
-                        triggerAudioInput(item); // ✅ now inside real user gesture
+                    if (isLongPress) {
+                        triggerAudioInput(item); // Change Audio
                     } else {
-                        handleSoundBtn(btn, item);
+                        handleSoundBtn(btn, item); // Play/Stop
                     }
                 });
 
-                btn.addEventListener('pointercancel', () => {
-                    if (pressTimer) clearTimeout(pressTimer);
-                    pressTimer = null;
+                // FIX 3: COLOR PICKER (Long press on the background)
+                let bgTimer = null;
+                item.addEventListener('pointerdown', (e) => {
+                    if (e.target !== btn && e.target !== label) {
+                        bgTimer = setTimeout(() => openColorPicker(item), 600);
+                    }
                 });
+                item.addEventListener('pointerup', () => clearTimeout(bgTimer));
+                item.addEventListener('pointerleave', () => clearTimeout(bgTimer));
 
+                // Prevent annoying system menus on iPhone
+                item.addEventListener('contextmenu', e => e.preventDefault());
                 btn.addEventListener('contextmenu', e => e.preventDefault());
 
-                /* ---- Label: persist title (debounced) ---- */
-                let titleDebounce = null;
+                /* ---- Label: persist title ---- */
                 label.addEventListener('input', () => {
-                    if (titleDebounce) clearTimeout(titleDebounce);
-                    titleDebounce = setTimeout(() => {
-                        saveField(item.dataset.id, 'title', label.textContent.trim());
-                        titleDebounce = null;
-                    }, 350);
+                    saveField(item.dataset.id, 'title', label.textContent.trim());
                 });
 
                 grid.appendChild(item);
