@@ -7,26 +7,16 @@
         <link rel="stylesheet" href="style.css" />
         <link rel="manifest" href="manifest.json" />
         <meta name="theme-color" content="#111111">
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-180.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-180.png">
         <style>
-            /*
-             * Functional-only additions — no aesthetic changes.
-             *
-             * Prevents iOS long-press text selection popups and the system
-             * callout menu (copy/paste bubble) from appearing on the
-             * interactive areas. touch-action:manipulation kills double-tap
-             * zoom without breaking single taps or our custom long-press.
-             */
             .image-upload-item,
             .frame,
             .sound-btn {
                 -webkit-user-select: none;
                 user-select: none;
-                -webkit-touch-callout: none;  /* iOS: no callout on long-press */
-                touch-action: manipulation;   /* no double-tap zoom */
+                -webkit-touch-callout: none;
+                touch-action: manipulation;
             }
-
-            /* Re-allow text selection inside the editable label. */
             .label {
                 -webkit-user-select: text;
                 user-select: text;
