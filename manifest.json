@@ -1,8 +1,8 @@
 {
   "name": "Barsound",
   "short_name": "Barsound",
-  "start_url": "/",
-  "scope": "./",
+  "start_url": "/barsound",
+  "scope": "/barsound",
   "display": "standalone",
   "background_color": "#111111",
   "theme_color": "#111111",
