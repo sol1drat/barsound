@@ -285,21 +285,10 @@
                 const btn   = item.querySelector('.sound-btn');
                 const label = item.querySelector('.label');
 
-                /*
-                 * Per-item press state.
-                 * Each cell gets its own variables — no shared globals that
-                 * can be stomped when the user taps two cells in quick succession.
-                 */
                 let bgPressTimer  = null;  // setTimeout handle for color-picker long-press
                 let frameDownTime = 0;     // timestamp of pointerdown on frame
                 let btnDownTime   = 0;     // timestamp of pointerdown on sound-btn
 
-                /* ---- Item background: long-press (≥600 ms) → color picker ----
-                 *
-                 * We keep the setTimeout approach here because opening a modal
-                 * doesn't require a direct user-gesture token (unlike file input).
-                 * pointercancel is now handled so the timer is always cleared.
-                 */
                 item.addEventListener('pointerdown', () => {
                     bgPressTimer = setTimeout(() => {
                         bgPressTimer = null;
@@ -313,72 +302,42 @@
                 item.addEventListener('pointerleave',  clearBgTimer);
                 item.addEventListener('pointercancel', clearBgTimer);  // ← was missing
                 item.addEventListener('contextmenu', e => e.preventDefault());
-
-                /* ---- Label: stop propagation so holding to position cursor
-                 *      on iOS doesn't accidentally fire the color-picker timer ----
-                 */
                 label.addEventListener('pointerdown', e => e.stopPropagation());
 
-                /* ---- Frame: tap (< 600 ms) → image upload ----
-                 *
-                 * KEY FIX: triggerImageInput calls input.click() directly from
-                 * pointerup — a genuine user-gesture handler — so iOS Safari
-                 * will honour the file-picker open request.
-                 *
-                 * setPointerCapture means pointerup still fires on `frame` even
-                 * if the user's finger drifts slightly off the element before
-                 * lifting, making short taps reliable.
-                 */
-                frame.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    frame.setPointerCapture(e.pointerId);
-                    frameDownTime = Date.now();
-                });
-                frame.addEventListener('pointerup', e => {
-                    e.stopPropagation();
-                    if (frameDownTime && (Date.now() - frameDownTime) < 600) {
-                        triggerImageInput(item);  // ← called from user-gesture handler ✓
-                    }
-                    frameDownTime = 0;
-                });
-                frame.addEventListener('pointercancel', e => {  // ← was missing
-                    e.stopPropagation();
-                    frameDownTime = 0;
-                });
-                frame.addEventListener('contextmenu', e => e.preventDefault());
+                let pressTimer = null;
+                let longPressTriggered = false;
 
-                /* ---- Sound button: tap (< 600 ms) → play/stop
-                 *                    hold (≥ 600 ms) → change audio ----
-                 *
-                 * KEY FIX: both branches call their action synchronously inside
-                 * pointerup, which is a direct user-gesture handler. Previously
-                 * triggerAudioInput was called from a setTimeout callback, which
-                 * iOS Safari treats as non-gesture and silently blocks the file
-                 * picker. Now the elapsed time is measured at pointerup instead.
-                 *
-                 * setPointerCapture keeps events on `btn` even if the finger
-                 * drifts off during the hold, so the hold is reliably detected.
-                 */
                 btn.addEventListener('pointerdown', e => {
                     e.stopPropagation();
-                    btn.setPointerCapture(e.pointerId);
-                    btnDownTime = Date.now();
+                    e.preventDefault();
+
+                    longPressTriggered = false;
+
+                    pressTimer = setTimeout(() => {
+                        longPressTriggered = true; // mark only
+                    }, 500);
                 });
+
                 btn.addEventListener('pointerup', e => {
                     e.stopPropagation();
-                    if (!btnDownTime) return;
-                    const elapsed = Date.now() - btnDownTime;
-                    btnDownTime = 0;
-                    if (elapsed >= 600) {
-                        triggerAudioInput(item);   // ← called from user-gesture handler ✓
+
+                    if (pressTimer) {
+                        clearTimeout(pressTimer);
+                        pressTimer = null;
+                    }
+
+                    if (longPressTriggered) {
+                        triggerAudioInput(item); // ✅ now inside real user gesture
                     } else {
                         handleSoundBtn(btn, item);
                     }
                 });
-                btn.addEventListener('pointercancel', e => {  // ← was missing
-                    e.stopPropagation();
-                    btnDownTime = 0;
+
+                btn.addEventListener('pointercancel', () => {
+                    if (pressTimer) clearTimeout(pressTimer);
+                    pressTimer = null;
                 });
+
                 btn.addEventListener('contextmenu', e => e.preventDefault());
 
                 /* ---- Label: persist title (debounced) ---- */
